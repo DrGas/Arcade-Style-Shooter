@@ -6,18 +6,24 @@
 <script type="text/javascript" src="https://code.createjs.com/1.0.0/createjs.min.js"></script>
 <script type="text/javascript">
 	
+
+// global variables
+var gun, target, w, h, score, bullet; 
 	
-var gun, target, w, h, score, bullet; // global variables
+	var bulletCoord;
+	var gunCoord;
+	var targetCoord;
 
 	function init(){
 	stage = new createjs.Stage("demoCanvas");
 	h = demoCanvas.height;
 	w = demoCanvas.width;
 
-	drawBullet();
 	drawTarget();
 	drawGun();
+		
 	moveTarget();
+		
 	addScore();
 
 	window.onkeydown = onKey;
@@ -28,11 +34,16 @@ var gun, target, w, h, score, bullet; // global variables
 	
 function tick(event) {
 
+	//why do we use localToGlobal?
+	gunCoord = gun.localToGlobal (w/2, h-20);
+	//gunCoord = gun.globalToLocal (w/2, h-20); //WHY??
+
 	stage.update(event);
-	
+
 }
 	
-
+	
+//CREATING GUN
 	 
 function drawGun(){
 	gun = new createjs.Shape(); 
@@ -42,8 +53,10 @@ function drawGun(){
 	gun.y = h - 10;
 	stage.addChild(gun);
 	//console.log('created gun');
-	//add tickcker function and gunControll createjs.Ticker.on("tick", gunControl);
+	//createjs.Ticker.on("tick", bulletControl);
 }
+	
+//**CREATING TARGET
 	
 function drawTarget(){
 	target = new createjs.Shape();  
@@ -56,74 +69,104 @@ function drawTarget(){
 	//console.log('created target');
 }
 	
+	
+//**MOVING TARGET
+	
 function moveTarget(){
 	createjs.Tween.get(target, {loop:true})
 	//first parameter is position, second the time for animation to move the circle in miliseconds
-	.to({x: w - 40, y: h - h + 30 }, 4000)
-		.wait(50)
-		.to({x: target.x, y: h - h + 30}, 4000);
+	.to({x: w - 60, y: h - h + 30 }, 4000)
+	.wait(50)
+	.to({x: target.x, y: h - h + 30}, 4000);
 }
 	
+//**CREATING SOUND
 	
-function drawBullet(){
+	function handleSound() {
+	sound = createjs.Sound.play('bullet');
+	console.log('piou piou')
 	
-}
-	
-	function bulletControl(event) {
-		var pt = bullet.localtoLocal(bulletCoord,300,target); //300 is a stage hight - it needs to be this so the bullet will go straight 
-		if (target.hitTest(pt.x, pt.y)) {
-			stage.removeChild(bullet);
-			target.alpha = 0.1;
-			score++;
-			score.text = score.value;
-			event.remove();
-		};
-		
-	if (pt.y<=10) {
-	fired=false;
-	target.alpha=1;
-	stage.removeChild(bullet)
-	event.remove();
-		
 	}
-		stage.update(event)}
 	
 	
-	
-	
-//function gunControll(event) {
-//	var pt = gun.localtoLocal(gunCoordination,300, target) - comparing coordinates of bullet and target, x of a bullet and x of a target, hittest works only when it comepares x cooridnates 
-// 	if target.hittest(pt.x, pt.y)) {
-//  stage.removeChild(bullet)
-//	target.apha =0.1
-//	score++
-//	score.text = score.value
-//	
-	
-//	};
-	
-//if (pt.y<=10) {
-//	fired=false;
-//	target.alpha=1;
-//	stage.removeChild(bullet)
-//	event.remove();} 
-//}	
+//**CREATING AND SHOOTING BULLET
 	
 function operateGun(event){
 	
 	bullet = new createjs.Shape();
 	bulletColor = bullet.graphics.beginFill('#FF69B4');
 	bullet.graphics.drawRect(0, 0, 10, 10);
+	
 	bullet.x = gun.x;
 	bullet.y = gun.y;
+	
+	bulletCoordX = bullet.x;
+	bulletCoordY = bullet.y;
 
-	console.log('you have a bullet');
+	//console.log('you have a bullet');
 	
 	createjs.Tween.get(bullet)
 	.to({y: h - h - 40}, 800)
-	stage.addChild(bullet)
+	stage.addChild(bullet);
+	//bulletSound();
+	
+	createjs.Sound.on("fileload", handleSound); // call the function handleSound()
+	createjs.Sound.registerSound('audio/bullet.mp3', 'bullet');
+	
+	
+	createjs.Ticker.on("tick", bulletControl);
+	
 	
 }
+	
+	
+	//**BULLET CONTROL HIT TEST
+	
+function bulletControl(event) {
+	var pt = bullet.localToLocal(bullet.x,300,target); //300 is a stage hight - it needs to be this so the bullet will go straight 
+	if (target.hitTest(pt.x, pt.y)) {
+		stage.removeChild(bullet);
+		target.alpha = 0.1;
+		score++;
+		score.text = score.value;
+		event.remove();
+		addScore();
+	};
+		
+	if (pt.x<=10) {
+		target.alpha=1;
+		stage.removeChild(bullet)
+		event.remove();
+		
+	}
+		stage.update(event)
+	}
+
+	
+// **GUN CONTROL HITTEST
+	
+function gunControl(event) {
+	var pt = gun.localToLocal(gun.x,300,target); //300 is a stage hight - it needs to be this so the bullet will go straight 
+	if (target.hitTest(pt.x, pt.y)) {
+		stage.removeChild(bullet);
+		target.alpha = 0.1;
+		score++;
+		score.text = score.value;
+		event.remove();
+		addScore();
+	};
+		
+	if (pt.y<=10) {
+		target.alpha=1;
+		stage.removeChild(bullet)
+		event.remove();
+		
+	}
+		stage.update(event)
+	}
+
+	
+//**MOVING GUN AND SHOOTING WITH SPACE BAR
 	
 function onKey(e){
 	
@@ -141,39 +184,31 @@ function onKey(e){
 		case 32: //space bar code
 			operateGun();
 			console.log ('bullet up')
-			bulletSound();
+			handleSound();
 			addScore();
 			break;
 					}
 	
 }	
 	
-	
+
+	//**ADDING SCORE	
 function addScore() {
 	
-	//0 IS CONNECTED WITH SCORE.TEXT AND SCORE.TEXT IS CONNECTED WITH SCORE.VALUE WHICH IS INCREMENTED BY ONE WITH EACH CLICK
-	score = new createjs.Text(0, "20px Helvetica", "#ff7700");
+	score = new createjs.Text(0, "20px Arial", "#ff7700");
 	//USING THE CALCULATION OF H AND W FROM STAGE 
 	score.x = w - 30;
 	score.y = h - h + 20;
 	score.textBaseline = "alphabetic";
 	score.value = 0;
 	stage.addChild(score);
+	console.log('adding score');
 		
 	}
 	
+
 	
 	
-		function bulletSound() {
-		createjs.Sound.on("fileload", handleSound); // call the function handleSound()
-		createjs.Sound.registerSound('audio/bullet.mp3', 'bullet');
-		stage.removeChild(this); 
-	}
-	
-	function handleSound() {
-		sound = createjs.Sound.play('bullet')
-		
-	}
 	
 </script>
 <style type="text/css">
